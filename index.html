@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Birthday Wishes Anish sir</title>
+  <meta name="viewport" content="width=device-width, user-scalable=no">
+  <style>
+    body {
+      margin: 0;
+      background: #111;
+    }
+
+    #canvas {
+      position: absolute;
+      margin: auto;
+      width: 320px;
+      height: 512px;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: #111;
+    }
+  </style>
+</head>
+
+<body>
+  <canvas id="canvas"></canvas>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/gsap/1.16.1/TweenMax.min.js"></script>
+  <script>
+    // canvas settings
+    var mViewWidth = 0,
+      mViewHeight = 0,
+      mCanvas = document.getElementById("canvas"),
+      mCtx;
+
+    var mWordData = [
+      [13, 92, 159, 67, 3, 0.0],
+      [129, 92, 236, 67, 1, 0.5],
+      [13, 158, 295, 68, 0, 1.0],
+      [13, 225, 295, 63, 1, 1.5],
+      [13, 287, 295, 70, 3, 2.0],
+      [13, 356, 295, 64, 2, 2.4]
+    ];
+
+    var mWords = [];
+
+    // load
+    var mImage = document.createElement('img');
+    mImage.crossOrigin = 'Anonymous';
+    mImage.src = 'anishSir.png';
+    mImage.onload = function () {
+      initCanvas();
+      initWords();
+      requestAnimationFrame(loop);
+    };
+
+    function initCanvas() {
+      mViewWidth = mCanvas.width = mCanvas.clientWidth;
+      mViewHeight = mCanvas.height = mCanvas.clientHeight;
+      mCtx = mCanvas.getContext('2d');
+    }
+
+    function initWords() {
+      var tl = new TimelineMax({ repeat: -1, repeatDelay: 1 });
+
+      var data, word;
+
+      for (var i = 0; i < mWordData.length; i++) {
+        data = mWordData[i];
+        word = mWords[i] = createWord(data);
+        tl.add(word.show(), data[5]);
+      }
+    }
+
+    function createWord(args) {
+      function W() {
+        return BouncyWord.apply(this, args);
+      }
+      W.prototype = BouncyWord.prototype;
+
+      return new W();
+    }
+
+    function update() {
+      for (var i = 0; i < mWords.length; i++) {
+        mWords[i].update();
+      }
+    }
+
+    function draw() {
+      mCtx.clearRect(0, 0, mViewWidth, mViewHeight);
+
+      for (var i = 0; i < mWords.length; i++) {
+        mWords[i].draw();
+      }
+    }
+
+    function loop() {
+      update();
+      draw();
+      requestAnimationFrame(loop);
+    }
+
+    function BouncyWord(sx, sy, sw, sh, dir) {
+      this.x = sx;
+      this.y = sy;
+      this.scaleX = 1;
+      this.scaleY = 1;
+
+      this.positions = [];
+      this.scales = [];
+      this.trailLength = 16;
+
+      this.getSprite(sx, sy, sw, sh);
+      this.setDirection(dir, sw, sh);
+    }
+    BouncyWord.prototype = {
+      getSprite: function (sx, sy, sw, sh) {
+        this.sprite = document.createElement('canvas');
+        this.trailSprite = document.createElement('canvas');
+        this.sprite.width = this.trailSprite.width = sw;
+        this.sprite.height = this.trailSprite.height = sh;
+
+        var ctx;
+        // get sprite
+        ctx = this.sprite.getContext('2d');
+        ctx.drawImage(mImage, sx, sy, sw, sh, 0, 0, sw, sh);
+
+        // get trail
+        ctx = this.trailSprite.getContext('2d');
+        ctx.drawImage(mImage, sx, sy, sw, sh, 0, 0, sw, sh);
+
+        var data = ctx.getImageData(0, 0, sw, sh);
+        for (var d = 0; d < data.data.length; d += 4) {
+          data.data[d + 0] = 206;
+          data.data[d + 1] = 4;
+          data.data[d + 2] = 4;
+        }
+        ctx.clearRect(0, 0, sw, sh);
+        ctx.putImageData(data, 0, 0);
+      },
+      setDirection: function (dir, w, h) {
+        var scaleDown = 0.6,
+          scaleUp = 1.15;
+
+        switch (dir) {
+          case 0:
+            this.pivotX = w * 0.5;
+            this.pivotY = h;
+            this.startX = this.x;
+            this.startY = -h;
+            this.elasticScaleX = scaleUp;
+            this.elasticScaleY = scaleDown;
+            break;
+          case 1:
+            this.pivotX = 0;
+            this.pivotY = h * 0.5;
+            this.startX = mViewWidth;
+            this.startY = this.y;
+            this.elasticScaleX = scaleDown;
+            this.elasticScaleY = scaleUp;
+            break;
+          case 2:
+            this.pivotX = w * 0.5;
+            this.pivotY = 0;
+            this.startX = this.x;
+            this.startY = mViewHeight;
+            this.elasticScaleX = scaleUp;
+            this.elasticScaleY = scaleDown;
+            break;
+          case 3:
+            this.pivotX = w;
+            this.pivotY = h * 0.5;
+            this.startX = -w;
+            this.startY = this.y;
+            this.elasticScaleX = scaleDown;
+            this.elasticScaleY = scaleUp;
+            break;
+        }
+      },
+      show: function () {
+        var tl = new TimelineMax();
+
+        tl.from(this, 0.5, { x: this.startX, y: this.startY, ease: Power3.easeIn });
+        tl.to(this, 0.2, { scaleX: this.elasticScaleX, scaleY: this.elasticScaleY, ease: Power4.easeOut });
+        tl.to(this, 0.8, { scaleX: 1.0, scaleY: 1.0, ease: Elastic.easeOut });
+        tl.set(this, { trailLength: 0 });
+
+        return tl;
+      },
+      update: function () {
+        this.positions.unshift(this.x, this.y);
+        this.scales.unshift(this.scaleX, this.scaleY);
+
+        if (this.positions.length > this.trailLength) {
+          this.positions.length = this.trailLength;
+          this.scales.length = this.trailLength;
+        }
+      },
+      draw: function () {
+        var x, y, scaleX, scaleY;
+
+        for (var i = 0; i < this.positions.length; i += 2) {
+          x = this.positions[i];
+          y = this.positions[i + 1];
+          scaleX = this.scales[i];
+          scaleY = this.scales[i + 1];
+
+          mCtx.save();
+          mCtx.translate(this.pivotX + x, this.pivotY + y);
+          mCtx.scale(scaleX, scaleY);
+          mCtx.translate(-this.pivotX, -this.pivotY);
+          mCtx.drawImage(this.trailSprite, 0, 0);
+          mCtx.restore();
+        }
+
+        mCtx.save();
+        mCtx.translate(this.pivotX + this.x, this.pivotY + this.y);
+        mCtx.scale(this.scaleX, this.scaleY);
+        mCtx.translate(-this.pivotX, -this.pivotY);
+        mCtx.drawImage(this.sprite, 0, 0);
+
+        mCtx.restore();
+      }
+    };
+  </script>
+</body>
+
+</html>
